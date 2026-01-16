@@ -13,7 +13,7 @@ export default function Signup() {
   const handleSignup = async () => {
     setError('')
 
-    // 🔹 Step 0️⃣ — Validate contact number (10 digits only)
+    // 🔹 Step 0️⃣ — Validate 10-digit mobile number
     const phoneRegex = /^[0-9]{10}$/
     if (!phoneRegex.test(contact)) {
       setError('Please enter a valid 10-digit mobile number.')
@@ -22,57 +22,67 @@ export default function Signup() {
 
     setLoading(true)
 
-    // 🔹 Step 1️⃣ — Create user in Supabase Auth
-    const { data, error: signUpError } = await supabase.auth.signUp({
-      email,
-      password,
-    })
+    try {
+      // 🔹 Step 1️⃣ — Create user in Supabase Auth
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: 'http://localhost:5173/login', // 👈 after verification, redirect here
+        },
+      })
 
-    // 🧱 Handle Auth errors (duplicate email, etc.)
-    if (signUpError) {
-      if (
-        signUpError.message.includes('User already registered') ||
-        signUpError.message.includes('duplicate key value') ||
-        signUpError.status === 400
-      ) {
-        setError('This email is already registered. Please login instead.')
-      } else {
-        setError(signUpError.message)
+      if (signUpError) {
+        if (
+          signUpError.message.includes('User already registered') ||
+          signUpError.status === 400
+        ) {
+          setError('This email is already registered. Please login instead.')
+        } else {
+          setError(signUpError.message)
+        }
+        setLoading(false)
+        return
       }
-      setLoading(false)
-      return
+
+      const user = data.user
+      if (!user) {
+        // 👇 happens when email verification is required
+        alert('Signup successful! Please check your email to verify your account.')
+        setLoading(false)
+        return
+      }
+
+      console.log('✅ User UUID:', user.id)
+
+      // 🔹 Step 2️⃣ — Insert name & contact in profiles table
+      const { error: insertError } = await supabase.from('profiles').insert([
+        {
+          id: user.id,
+          name,
+          contact,
+          email: user.email,
+        },
+      ])
+
+      if (insertError) {
+        setError(insertError.message)
+        setLoading(false)
+        return
+      }
+
+      alert('Signup successful! Please check your email to verify your account.')
+
+      // Reset form
+      setName('')
+      setContact('')
+      setEmail('')
+      setPassword('')
+    } catch (err) {
+      console.error(err)
+      setError('Something went wrong. Please try again.')
     }
 
-    const user = data.user
-    if (!user) {
-      setError('Signup failed. Please try again.')
-      setLoading(false)
-      return
-    }
-
-    console.log('✅ User UUID:', user.id)
-
-    // 🔹 Step 2️⃣ — Insert name & contact in profiles table
-    const { error: insertError } = await supabase.from('profiles').insert([
-      {
-        id: user.id,
-        name,
-        contact,
-      },
-    ])
-
-    if (insertError) {
-      setError(insertError.message)
-      setLoading(false)
-      return
-    }
-
-    // ✅ Success
-    alert('Signup successful! Please check your email for verification.')
-    setName('')
-    setContact('')
-    setEmail('')
-    setPassword('')
     setLoading(false)
   }
 
