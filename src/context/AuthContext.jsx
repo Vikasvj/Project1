@@ -54,8 +54,19 @@ export const AuthProvider = ({ children }) => {
     return () => listener.subscription.unsubscribe()
   }, [])
 
+const logout = async () => {
+  const { error } = await supabase.auth.signOut();
+
+  if (error) {
+    console.error("Logout error:", error.message);
+  } else {
+    setUser(null);
+    setRole(null);
+  }
+};
+
   return (
-    <AuthContext.Provider value={{ user, role, loading }}>
+    <AuthContext.Provider value={{ user, role,logout, loading }}>
       {children}
     </AuthContext.Provider>
   )

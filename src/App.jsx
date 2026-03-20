@@ -1,29 +1,21 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 
-
-
+import ProtectedRoute from "./components/ProtectedRoute";
 
 import Navbar from "./components/Nabvar";
 import Signup from "./pages/Signup";
 import Login from "./pages/Login";
 import Home from "./pages/Home";
-
-
-
+import Profile from "./pages/Profile";
 export default function App() {
-
-
-
-
   return (
     <>
       <Navbar />
       <Routes>
-       
-       <Route path="/" element={<Home/>} />
+        <Route path="/" element={<Home />} />
         <Route path="/register" element={<Signup />} />
         <Route path="/login" element={<Login />} />
-      
+          <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
       </Routes>
     </>
   );
